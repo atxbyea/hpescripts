@@ -1,0 +1,42 @@
+Run any kind of DHCP server on your laptop, bind it to a USB interface or similar, connect to top of rack management switches
+
+example will assume isc-dhcp-server and iLO6
+
+let's create a list of iLO-dhcp leases
+
+`dhcp-lease-list | grep ILO > leases.txt`
+
+now let's prune the file to only give us the last octet of each IP
+
+`cat leases.txt | cut -d . -f 4 | cut -d " " -f1 > iloip.txt`
+
+Now let's use this list to for loop the info we need, in this case pull the MAC-addresses of all hosts, and let's light the UID to confirm we have pulled the info from said server
+
+```
+for i in $(cat iloip.txt)
+   do ilorest list --select EthernetInterface.v1_4_1 --url https://192.168.1.$i -u Administrator -p PaSsWoRd | grep -E 'MAC|FQDN'
+      ilorest set LOcationIndicatorActive=true 
+      ilorest commit
+   done > MAC-addresses
+```
+
+
+Example output of the file will look similar to this 
+
+```
+MACAddress=11:22:33:44:55:ed
+MACAddress=11:22:33:44:55:ef
+FQDN=None
+MACAddress=11:22:33:44:55:47
+PermanentMACAddress=11:22:33:44:55:47
+MACAddress=11:22:33:44:55:04
+PermanentMACAddress=11:22:33:44:55:04
+MACAddress=11:22:33:44:55:31
+MACAddress=11:22:33:44:55:ec
+MACAddress=11:22:33:44:55:ee
+FQDN=ILOCZ123456AB.eirikz.dhcp
+MACAddress=11:22:33:44:55:46
+PermanentMACAddress=11:22:33:44:55:46
+```
+
+
