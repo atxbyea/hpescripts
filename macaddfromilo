@@ -9,14 +9,14 @@ let's create a list of iLO-dhcp leases
 now let's prune the file to only give us the last octet of each IP
 
 `cat leases.txt | cut -d . -f 4 | cut -d " " -f1 > iloip.txt`
-
+30cm power cable
 Now let's use this list to for loop the info we need, in this case pull the MAC-addresses of all hosts, and let's light the UID to confirm we have pulled the info from said server
 
 ```
 for i in $(cat iloip.txt)
    do ilorest list --select EthernetInterface.v1_4_1 --url https://192.168.1.$i -u Administrator -p PaSsWoRd | grep -E 'MAC|FQDN'
-      ilorest set LOcationIndicatorActive=true 
-      ilorest commit
+      ilorest set LocationIndicatorActive=true 
+      ilorest commit &
    done > MAC-addresses
 ```
 
