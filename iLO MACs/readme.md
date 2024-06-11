@@ -44,12 +44,12 @@ MACAddress=11:22:33:44:55:47
 PermanentMACAddress=11:22:33:44:55:47
 MACAddress=11:22:33:44:55:04
 PermanentMACAddress=11:22:33:44:55:04
-MACAddress=11:22:33:44:55:31
-MACAddress=11:22:33:44:55:ec
-MACAddress=11:22:33:44:55:ee
-FQDN=ILOCZ123456AB.eirikz.dhcp
+MACAddress=11:22:33:44:55:31 <---|
+MACAddress=11:22:33:44:55:ec <---| If the server has a 4 port LOM look for the lowest digit for the first port (remember this is hexadecimal, so 9 is lower than a etc)
+MACAddress=11:22:33:44:55:ee <---|
+FQDN=ILOCZ123456AB.eirikz.dhcp <--- Hostname and Serial Number
 MACAddress=11:22:33:44:55:46
-PermanentMACAddress=11:22:33:44:55:46
+PermanentMACAddress=11:22:33:44:55:46 <--- One of the permanent ones is iLO, look for the one that is not in a series
 ```
 
 This script is not fully paralell, and has room for improvements, but it works fine, takes about 30m for 300 servers, most of that time is the wait time to get confirmation from ilorest.
