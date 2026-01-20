@@ -1,0 +1,274 @@
+- name: Configure domain enrollment and SSSD config, PAM config, SSHD config and some hardening.
+  hosts: eirikz
+  gather_facts: true
+  become: true
+
+  tasks: 
+
+###Lets test pinging the DNS server, or fail if it doesn't respond
+    - name: Try pinging dns
+      shell: 'ping -c 1 192.168.1.1'
+      check_mode: false # always run, ping is safe
+      register: ping_result
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Internal DNS ping failed
+      debug:
+        msg: |
+          INTERNAL DNS PING FAILED
+          This system cannot reach our internal DNS servers, AD enrollment
+          will not work.      
+      when: ping_result.rc != 0
+
+    - name: INTERNAL DNS PING FAILED, END PLAY FOR HOST IMMEDIATELY
+      meta: end_host
+      when: ping_result.rc != 0
+
+### Lets try a DNS lookup, and fail if that doesn't work
+    - name: Verify DNS resolution
+      ansible.builtin.command: "getent ahosts my.domain.com"
+      register: dns_check
+      changed_when: false
+
+    - name: Fail if hostname does not resolve
+      ansible.builtin.fail:
+        msg: "DNS lookup failed for my.domain.com"
+      when: dns_checkis failed 
+
+
+
+### Lets install the needed stuff for AD and troubleshooting   
+    - name: Installing packages necessary for AD enrollment.
+      debug:
+        msg: |
+          INSTALLING PACKAGES
+          Slow if package operations are required. Please wait.      
+
+
+    - name: Install necessary DNF packages (Enterprise Linux)
+      dnf:
+        update_cache: true
+        state: present
+        enablerepo: epel
+        name:
+          - sssd
+          - sssd-tools
+          - sssd-ad
+          - sssd-common
+          - realmd
+          - adcli
+          - samba-common-tools
+          - oddjob
+          - oddjob-mkhomedir
+          - openldap-clients
+          - samba-winbind
+          - selinux-policy-targeted
+          - krb5-workstation
+      become: true
+      register: sssd_packages
+      when: ansible_os_family == "RedHat"
+
+### Lets check if system is already part of AD
+
+    - name: Check if system is already enrolled in ACTIVE DIRECTORY
+      shell: "realm list | grep -q 'realm-name: MY.DOMAIN.COM'"
+      when: sssd_packages is succeeded
+      register: ad_enrolled
+      ignore_errors: yes
+      failed_when: false
+      changed_when: false
+
+    - name: System already enrolled
+      debug:
+        msg: |
+          SYSTEM ALREADY ENROLLED
+          No enrollment attempt will be done.
+          Play will continue and perform config validation, if it exists.      
+      when: ad_enrolled.rc == 0
+
+### Verify rdns is disabled in krb5.conf
+
+    - name: Ensure rdns is disabled in krb5.conf
+      ini_file:
+        path: /etc/krb5.conf
+        section: libdefaults
+        option: rdns
+        value: false
+        no_extra_spaces: yes
+
+### Lets join the domain
+
+    - name: Enroll this device with 'realm join'
+      shell:
+        cmd: |
+          echo '{{ credentials.ad_enrollment.pass }}' | \
+          realm join \
+          --computer-name={{ inventory_hostname }} \
+          --user={{ credentials.ad_enrollment.user }} \
+          my.domain.com     
+      when: (sssd_packages is succeeded) and (ad_enrolled.rc != 0)
+      # DO NOT LOG -- DO NOT COMMENT OUT IN PRODUCTION!
+      # THIS COMMAND CONTAINS ENROLLMENT CREDENTIALS
+      no_log: true
+      # keep running if enrollment fails, we still want to check config
+      ignore_errors: true
+      register: realm_join
+
+    - name: Enroll failed, STDERR
+      debug:
+        msg: |
+          ENROLLMENT FAILED. STDERR BELOW
+          "{{ realm_join.stderr }}"
+
+          Play will continue if sssd.conf already exists to validate config.      
+      when: realm_join.failed | default(false)
+
+
+### Lets replace the SSSD conf file
+
+    - name: Create or replace /etc/sssd/sssd.conf file using a template
+      ansible.builtin.template:
+        src: "sssd.conf.j2"
+        dest: "/etc/sssd/sssd.conf"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+
+
+    - name: Restore SELinux context for SSSD configuration
+      command: restorecon -v /etc/sssd/sssd.conf
+      when: ansible_os_family == "RedHat"
+
+
+### Lets replace the pam.d/sshd file
+
+    - name: Create or replace /etc/pam.d/sshd file using a template
+      ansible.builtin.template:
+        src: "sshd.pam.j2"
+        dest: "/etc/pam.d/sshd"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+
+    - name: Restore SELinux context for sshd.pam configuration
+      command: restorecon -v /etc/pam.d/sshd
+      when: ansible_os_family == "RedHat"
+
+### Lets replace the nsswitch.conf
+
+    - name: Create or replace /etc/nsswitch.conf file using a template
+      ansible.builtin.template:
+        src: "nsswitch.conf.j2"
+        dest: "/etc/nsswitch.conf"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+
+    - name: Restore SELinux context for nsswitch.conf configuration
+      command: restorecon -v /etc/nsswitch.conf
+      when: ansible_os_family == "RedHat"
+
+### Lets replace the sshd_config file
+
+    - name: Create or replace /etc/ssh/sshd_config file using a template
+      ansible.builtin.template:
+        src: "sshd_config.j2"
+        dest: "/etc/ssh/sshd_config"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+
+    - name: Restore SELinux context for sshd_config configuration
+      command: restorecon -v /etc/ssh/sshd_config
+      when: ansible_os_family == "RedHat"
+
+### Lets insert some banner fun
+
+    - name: Install SSH login banner with ASCII logo
+      ansible.builtin.copy:
+        dest: /etc/ssh/ssh_banner
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          *******************************************************************************
+          *                                                                             *
+          *  WARNING: Authorized access only.                                           *
+          *                                                                             *
+          *  All activities on this system are monitored and recorded.                  *
+          *  Unauthorized access is prohibited and may be subject to disciplinary       *
+          *  action.                                                                    *
+          *                                                                             *
+          *******************************************************************************
+
+
+    - name: Install gen-motd script
+      ansible.builtin.copy:
+        dest: /usr/local/sbin/gen-motd
+        owner: root
+        group: root
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          WIDTH=79
+          HOST=$(hostname)
+          {
+            printf "\n"
+            printf "%*s\n" "$WIDTH" "" | tr ' ' '*'
+            printf "* %-*s *\n" $((WIDTH-4)) "Hostname: $HOST"
+            printf "%*s\n" "$WIDTH" "" | tr ' ' '*'
+          } > /etc/motd
+
+
+
+### Lets do some restarts of services
+    - name: restarting sssd
+      systemd:
+        name: sssd
+        state: restarted
+
+    - name: restarting sshd
+      systemd:
+        name: ssh
+        state: restarted
+
+### Lets do some validations
+
+    - name: Validate NSS and SSSD configuration
+      hosts: all
+      become: yes
+      gather_facts: no
+
+      tasks:
+        - name: Lookup AD user via NSS
+          command: getent passwd zakariassen
+          register: getent_passwd
+          changed_when: false
+          failed_when: false
+
+        - name: Output getent passwd result
+          debug:
+            msg: "{{ getent_passwd.stdout | default('No output') }}"
+
+        - name: Lookup AD group via NSS
+          command: getent group "home-users"
+          register: getent_group
+          changed_when: false
+          failed_when: false
+
+        - name: Output getent group result
+          debug:
+            msg: "{{ getent_group.stdout | default('No output') }}"
+
+        - name: Verify SSSD NSS provider configuration
+          command: sssctl config-check
+          register: sssctl_check
+          changed_when: false
+          failed_when: false
+
+        - name: Output sssctl config-check result
+          debug:
+            msg: "{{ sssctl_check.stdout_lines | default(['No output']) }}"
+
+ 
