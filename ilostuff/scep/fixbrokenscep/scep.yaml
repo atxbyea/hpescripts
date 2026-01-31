@@ -1,0 +1,45 @@
+- name: Configure Automatic Certificate Enrollment via Redfish
+  hosts: ilo
+  gather_facts: no
+
+  tasks:
+
+    - name: Disable SCEP
+      ansible.builtin.command:
+        argv:
+          - curl
+          - "-k"
+          - "-u"
+          - "username:password""
+          - "-H"
+          - "Content-Type: application/json"
+          - "-X"
+          - "PATCH"
+          - "--data"
+          - "@scep.json"
+          - "https://{{ ansible_host }}/redfish/v1/Managers/1/SecurityService/AutomaticCertificateEnrollment"
+      args:
+        chdir: "{{ playbook_dir }}"
+ 
+
+
+
+
+
+
+    - name: Perform Enrollment 
+      ansible.builtin.command:
+        argv:
+          - curl
+          - "-k"
+          - "-u"
+          - "username:password"
+          - "-H"
+          - "Content-Type: application/json"
+          - "-X"
+          - "PATCH"
+          - "--data"
+          - "@enrollment.json"
+          - "https://{{ ansible_host }}/redfish/v1/Managers/1/SecurityService/AutomaticCertificateEnrollment"
+      args:
+        chdir: "{{ playbook_dir }}"
