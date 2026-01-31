@@ -1,0 +1,20 @@
+  598  git clone https://github.com/MarcJHuber/event-driven-servers.git
+  599  cd event-driven-servers/
+  600  ls
+  601  ./configure tac_plus-ng
+  603  dnf install c-ares
+  604  dnf install c-ares-devel
+  606  dnf install libcur-devel
+  607  dnf install libcurl-devel
+  611  dnf install openldap-devel
+  613  dnf install pam-devel
+  615  dnf install pcre2-devel
+  617  dnf install radcli-devel
+  619  dnf install lksctp-tools-devel usrsctp-devel
+  621  dnf install radcli-compat-devel freeradius-devel
+  622  dnf install openldap-clients-devel
+  623  dnf install openldap-clients
+  624  ./configure tac_plus-ng
+  625  make
+  626  make install
+  627  tac_plus-ng 
