@@ -1,0 +1,14 @@
+{
+    "ActiveDirectory": {
+        "RemoteRoleMapping": [
+            {
+                "LocalRole": "ReadOnly",
+                "RemoteGroup": "CN=ilo-view,OU=Groups,DC=int,DC=domain,DC=com"
+            },
+            {
+                "LocalRole": "Administrator",
+                "RemoteGroup": "CN=ilo-admin,OU=Groups,DC=int,DC=domain,DC=com"
+            }
+        ]
+    }
+}

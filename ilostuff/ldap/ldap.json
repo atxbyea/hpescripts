@@ -1,0 +1,10 @@
+{
+    "LDAP": {
+        "AccountProviderType": "ActiveDirectoryService",
+        "ServiceEnabled": true,
+        "ServiceAddresses": [
+            "int.domain.com"
+        ]
+    }
+}
+

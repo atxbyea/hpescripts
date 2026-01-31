@@ -1,0 +1,16 @@
+- name: Delete local Admin
+  hosts: ilo
+  gather_facts: no
+
+  tasks:
+    - name: Delete local Admin user
+      ansible.builtin.command:
+        argv:
+          - curl
+          - "-k"
+          - "-u"
+          - "{{ user_and_pass }}"
+          - "-X"
+          - "DELETE"
+          - "https://{{ ansible_host }}/redfish/v1/AccountService/Accounts/2"
+      ignore_errors: yes

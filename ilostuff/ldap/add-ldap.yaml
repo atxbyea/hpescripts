@@ -1,0 +1,64 @@
+- name: Configure LDAP
+  hosts: ilo
+  gather_facts: no
+
+  tasks:
+    - name: Configure LDAP domain
+      ansible.builtin.command:
+        argv:
+          - curl
+          - "-k"
+          - "-u"
+          - "{{ user_and_pass }}"
+          - "-H"
+          - "Content-Type: application/json"
+          - "-X"
+          - "PATCH"
+          - "--data"
+          - "@ldap.json"
+          - "https://{{ ansible_host }}/redfish/v1/AccountService"
+
+    - name: Configure KRB
+      ansible.builtin.command:
+        argv:
+          - curl
+          - "-k"
+          - "-u"
+          - "{{ user_and_pass }}"
+          - "-H"
+          - "Content-Type: application/json"
+          - "-X"
+          - "PATCH"
+          - "--data"
+          - "@krb.json"
+          - "https://{{ ansible_host }}/redfish/v1/AccountService"
+
+    - name: Configure RemoteRole
+      ansible.builtin.command:
+        argv:
+          - curl
+          - "-k"
+          - "-u"
+          - "{{ user_and_pass }}"
+          - "-H"
+          - "Content-Type: application/json"
+          - "-X"
+          - "PATCH"
+          - "--data"
+          - "@remoterole.json"
+          - "https://{{ ansible_host }}/redfish/v1/AccountService"
+
+    - name: Configure Context
+      ansible.builtin.command:
+        argv:
+          - curl
+          - "-k"
+          - "-u"
+          - "{{ user_and_pass }}"
+          - "-H"
+          - "Content-Type: application/json"
+          - "-X"
+          - "PATCH"
+          - "--data"
+          - "@context.json"
+          - "https://{{ ansible_host }}/redfish/v1/AccountService"

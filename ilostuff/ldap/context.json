@@ -1,0 +1,12 @@
+{
+    "LDAP": {
+        "LDAPService": {
+            "SearchSettings": {
+                "BaseDistinguishedNames": [
+                    "CN=HPE,DC=int,DC=domain,DC=com",
+                    "DC=int,DC=domain,DC=com"
+                ]
+            }
+        }
+    }
+}

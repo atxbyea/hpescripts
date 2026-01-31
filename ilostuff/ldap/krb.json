@@ -1,0 +1,9 @@
+{
+    "ActiveDirectory": {
+        "ServiceEnabled": true,
+        "ServiceAddresses": [
+            "INT.DOMAIN.COM"
+        ]
+    }
+}
+
