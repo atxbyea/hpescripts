@@ -1,0 +1,63 @@
+ - hosts: round1
+   connection: local
+   name: Set BIOS attributes
+   gather_facts: False
+ 
+ 
+   tasks:
+
+   - name: Set BIOS attribute MinimumSevAsid to 100
+     redfish_config:
+       category: Systems
+       command: SetBiosAttributes
+       bios_attributes:
+         MinimumSevAsid: 100
+       baseuri: "{{ inventory_hostname }}"
+       username: "{{ username }}"
+       password: "{{ password }}"
+     register: bios_attribute
+
+
+   - name: Set BIOS attribute AmdSecureMemoryEncryption to Enabled
+     redfish_config:
+       category: Systems
+       command: SetBiosAttributes
+       bios_attributes:
+         AmdSecureMemoryEncryption: Enabled
+       baseuri: "{{ inventory_hostname }}"
+       username: "{{ username }}"
+       password: "{{ password }}"
+     register: bios_attribute
+
+
+   - name: Set BIOS attribute AmdSecureNestedPaging to Enabled
+     redfish_config:
+       category: Systems
+       command: SetBiosAttributes
+       bios_attributes:
+         AmdSecureNestedPaging: Enabled
+       baseuri: "{{ inventory_hostname }}"
+       username: "{{ username }}"
+       password: "{{ password }}"
+     register: bios_attribute
+
+   - name: Set BIOS attribute TransparentSecureMemoryEncryption to Enabled
+     redfish_config:
+       category: Systems
+       command: SetBiosAttributes
+       bios_attributes:
+         TransparentSecureMemoryEncryption: Enabled
+       baseuri: "{{ inventory_hostname }}"
+       username: "{{ username }}"
+       password: "{{ password }}"
+     register: bios_attribute
+
+
+   - name: Reboot system to apply new BIOS settings
+     redfish_command:
+       category: Systems
+       command: PowerReboot
+       baseuri: "{{ inventory_hostname }}"
+       username: "{{ username }}"
+       password: "{{ password }}"
+     when: bios_attribute.changed

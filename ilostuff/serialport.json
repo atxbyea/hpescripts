@@ -1,0 +1,8 @@
+{
+    "Oem": {
+        "Hpe": {
+            "VSPEnabled": true,
+	    "SerialCLISpeed": 115200
+               }
+           }
+}
