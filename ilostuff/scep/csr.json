@@ -1,0 +1,10 @@
+{          "HttpsCertCSRSubjectValue": {
+            "City": "Harstad",
+            "CommonName": "hostname.int.domain.com",
+            "Country": "NO",
+            "IncludeIP": false,
+            "OrgName": "Eirikz",
+            "OrgUnit": "Branch",
+            "State": "Harstad County"
+}
+}

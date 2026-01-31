@@ -1,0 +1,8 @@
+  {
+  "AutomaticCertificateEnrollmentSettings": {
+    "ChallengePassword": "{{ challenge_password }}",
+    "ServerUrl": "https://scep.int.domain.com:8443/scep/",
+    "ServiceEnabled": true
+  }
+}
+

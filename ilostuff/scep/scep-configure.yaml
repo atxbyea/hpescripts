@@ -1,0 +1,62 @@
+- name: Configure Automatic Certificate Enrollment via Redfish
+  hosts: ilo
+  gather_facts: no
+
+  tasks:
+    - name: Render csr.json using inventory hostname
+      ansible.builtin.template:
+        src: csr.json.j2
+        dest: "{{ playbook_dir }}/csr.json"
+#
+    - name: Change CSR fields for Automatic Certificate Enrollment
+      ansible.builtin.command:
+        argv:
+          - curl
+          - "-k"
+          - "-u"
+          - "{{ user_and_pass }}"
+          - "-H"
+          - "Content-Type: application/json"
+          - "-X"
+          - "PATCH"
+          - "--data"
+          - "@csr.json"
+          - "https://{{ ansible_host }}/redfish/v1/Managers/1/SecurityService/AutomaticCertificateEnrollment"
+      args:
+        chdir: "{{ playbook_dir }}"
+
+    - name: Import CA Certificate
+      ansible.builtin.command:
+        argv:
+          - curl
+          - "-k"
+          - "-u"
+          - "{{ user_and_pass }}"
+          - "-H"
+          - "Content-Type: application/json"
+          - "-X"
+          - "POST"
+          - "--data"
+          - "@scepcert.json"
+          - "https://{{ ansible_host }}/redfish/v1/Managers/1/SecurityService/AutomaticCertificateEnrollment/Actions/HpeAutomaticCertEnrollment.ImportCACertificate"
+      args:
+        chdir: "{{ playbook_dir }}"
+
+
+    - name: Perform Enrollment 
+      ansible.builtin.command:
+        argv:
+          - curl
+          - "-k"
+          - "-u"
+          - "{{ user_and_pass }}"
+          - "-H"
+          - "Content-Type: application/json"
+          - "-X"
+          - "PATCH"
+          - "--data"
+          - "@enrollment.json"
+          - "https://{{ ansible_host }}/redfish/v1/Managers/1/SecurityService/AutomaticCertificateEnrollment"
+      args:
+        chdir: "{{ playbook_dir }}"
+
