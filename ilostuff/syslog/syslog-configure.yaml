@@ -1,0 +1,36 @@
+- name: Configure Remote syslog using TLS and certificate
+  hosts: ilo
+  gather_facts: no
+
+  tasks:
+    - name: Import CA Certificate
+      ansible.builtin.command:
+        argv:
+          - curl
+          - "-k"
+          - "-u"
+          - "{{ user_and_pass }}"
+          - "-H"
+          - "Content-Type: application/json"
+          - "-X"
+          - "POST"
+          - "--data"
+          - "@syslogcert.json"
+          - "https://{{ ansible_host }}/redfish/v1/EventService/Actions/Oem/Hpe/HpeEventService.ImportCACertificate"
+
+    - name: Configure Remote Syslog
+      ansible.builtin.command:
+        argv:
+          - curl
+          - "-k"
+          - "-u"
+          - "{{ user_and_pass }}"
+          - "-H"
+          - "Content-Type: application/json"
+          - "-X"
+          - "POST"
+          - "--data"
+          - "@syslog.json"
+          - "https://{{ ansible_host }}/redfish/v1/EventService/Subscriptions/"
+
+
