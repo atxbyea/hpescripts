@@ -1,0 +1,112 @@
+#############################
+#### GLOBAL DIRECTIVES ######
+#############################
+
+global(
+    workDirectory="/var/lib/rsyslog"
+    maxMessageSize="64k"
+)
+
+#############################
+#### MODULES ###############
+#############################
+
+module(load="imuxsock")    # local system logging via /dev/log
+module(load="imjournal")   # systemd journal input
+module(load="imklog")      # kernel logging
+
+#############################
+#### INPUT SETTINGS #########
+#############################
+
+# Read all journal entries
+input(type="imjournal" StateFile="imjournal.state")
+
+#############################
+#### TEMPLATES ##############
+#############################
+
+# Standard RFC5424 format (safe for SIEMs)
+template(name="RFC5424Format" type="string"
+         string="<%PRI%>1 %TIMESTAMP:::date-rfc3339% %HOSTNAME% %APP-NAME% %PROCID% %MSGID% %STRUCTURED-DATA% %msg%\n")
+
+#############################
+#### SECURITY / AUDIT LOGS ##
+#############################
+
+if (
+    $programname == "auditd" or
+    $programname == "sshd" or
+    $programname == "sudo" or
+    $syslogfacility-text == "authpriv" or
+    $syslogfacility-text == "security" or
+    $syslogtag contains "security"
+) then {
+### Arcsight logs
+    action(
+        type="omfwd"
+        target="destination1.int.domain.com"
+        port="514"
+        protocol="tcp"
+        template="RFC5424Format"
+
+        queue.type="linkedList"
+        queue.filename="security"
+        queue.maxdiskspace="1g"
+        queue.saveonshutdown="on"
+        queue.dequeuebatchsize="100"
+        action.resumeRetryCount="-1"
+    )
+### MXDR logs
+    action(
+        type="omfwd"
+        target="destination2.int.domain.com"
+        port="514"
+        protocol="tcp"
+        template="RFC5424Format"
+
+        queue.type="linkedList"
+        queue.filename="security"
+        queue.maxdiskspace="1g"
+        queue.saveonshutdown="on"
+        queue.dequeuebatchsize="100"
+        action.resumeRetryCount="-1"
+    )
+
+
+    stop
+}
+
+#############################
+#### ALL OTHER LOGS #########
+#############################
+### OpsRamp logs
+action(
+    type="omfwd"
+    target="destination3.int.domain.com"
+    port="514"
+    protocol="tcp"
+    template="RFC5424Format"
+
+    queue.type="direct"
+    queue.filename="default"
+    queue.maxdiskspace="1g"
+    queue.saveonshutdown="on"
+    queue.dequeuebatchsize="100"
+    action.resumeRetryCount="-1"
+)
+
+#############################
+#### LOCAL LOGGING ##########
+#############################
+
+# Keep local logging (recommended on RHEL)
+*.info;mail.none;authpriv.none;cron.none    /var/log/messages
+authpriv.*                                  /var/log/secure
+mail.*                                      -/var/log/maillog
+cron.*                                      /var/log/cron
+*.emerg                                     :omusrmsg:*
+
+#############################
+#### END ####################
+#############################

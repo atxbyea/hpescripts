@@ -1,0 +1,102 @@
+- name: Tweak some of the logging stuff, and configure rsyslog to forward to destination1 and destination2
+  hosts: eirikz
+  gather_facts: true
+  become: true
+
+  tasks: 
+
+
+### Lets install rsyslog
+    - name: Installing packages necessary for AD enrollment.
+      debug:
+        msg: |
+          INSTALLING PACKAGES
+          Slow if package operations are required. Please wait.      
+    
+    
+    - name: Install necessary DNF packages (Enterprise Linux)
+      dnf:
+        update_cache: true
+        state: present
+        enablerepo: epel
+        name:
+          - rsyslog
+      become: true
+      register: rsyslog_packages
+      when: ansible_os_family == "RedHat"
+    
+### Lets replace the rsyslog conf file
+
+    - name: Create or replace /etc/rsyslog.conf file using a template
+      ansible.builtin.template:
+        src: "rsyslog.conf.j2"
+        dest: "/etc/rsyslog.conf"
+        owner: "root"
+        group: "root"
+        mode: "0600"
+    
+    
+    - name: Restore SELinux context for rsyslog configuration
+      command: restorecon -v /etc/rsyslog.conf
+      when: ansible_os_family == "RedHat"
+    
+
+### Lets replace the auditd.conf file
+
+    - name: Create or replace /etc/audit/auditd.conf file using a template
+      ansible.builtin.template:
+        src: "auditd.conf.j2"
+        dest: "/etc/audit/auditd.conf"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+    
+    - name: Restore SELinux context for auditd.conf configuration
+      command: restorecon -v /etc/audit/auditd.conf
+      when: ansible_os_family == "RedHat"
+    
+### Lets replace the journald.conf
+
+    - name: Create or replace /etc/journald.conf file using a template
+      ansible.builtin.template:
+        src: "journald.conf.j2"
+        dest: "/etc/systemd/journald.conf"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+    
+    - name: Restore SELinux context for journald.conf configuration
+      command: restorecon -v /etc/systemd/journald.conf
+      when: ansible_os_family == "RedHat"
+    
+### Lets replace the rsyslog logrotate file
+
+    - name: Create or replace /etc/logrotate.d/rsyslog file using a template
+      ansible.builtin.template:
+        src: "logrotate.d/rsyslog.j2"
+        dest: "/etc/logrotate.d/rsyslog"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+    
+    - name: Restore SELinux context for rsyslog configuration
+      command: restorecon -v /etc/logrotate.d/rsyslog
+      when: ansible_os_family == "RedHat"
+
+
+### Lets do some restarts of services
+    - name: restarting auditd
+      systemd:
+        name: auditd
+        state: restarted
+    
+    - name: restarting journald
+      systemd:
+        name: journald
+        state: restarted
+
+    - name: restarting rsyslog
+      systemd:
+        name: rsyslog
+        state: restarted
+
